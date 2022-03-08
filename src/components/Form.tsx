@@ -24,7 +24,14 @@ const Form = () => {
 	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		if (title && isEditing && typeof editID === "string") {
-			updateTask.mutate({ id: editID, title });
+			updateTask.mutate(
+				{ id: editID, title },
+				{
+					onSuccess: () => {
+						queryClient.invalidateQueries("tasks");
+					},
+				}
+			);
 			setTitle("");
 			setEditID(null);
 			setIsEditing(false);
