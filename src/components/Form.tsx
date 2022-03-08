@@ -17,9 +17,7 @@ const Form = () => {
 	const deleteTask = useDeleteTask();
 	const taskResults = useTask();
 	const addTask = useNewTask();
-	const { data, isError, isLoading } = taskResults;
-
-	console.log(data);
+	const { data, isError, isSuccess } = taskResults;
 
 	const queryClient = useQueryClient();
 
@@ -36,7 +34,11 @@ const Form = () => {
 				title: title,
 				isDone: false,
 			};
-			addTask.mutate(newTask);
+			addTask.mutate(newTask, {
+				onSuccess: () => {
+					queryClient.invalidateQueries("tasks");
+				},
+			});
 			setTitle("");
 		}
 	};
@@ -91,7 +93,7 @@ const Form = () => {
 					</button>
 				</div>
 			</form>
-			{data.length > 0 && (
+			{isSuccess && (
 				<List
 					tasks={data}
 					removeTask={removeTask}

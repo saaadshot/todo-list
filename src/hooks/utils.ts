@@ -1,12 +1,10 @@
 const getLocalStorage = () => {
-	// let task = localStorage.getItem("task");
-	// if (task) {
-	// 	return (task = JSON.parse(localStorage.getItem("task") || "{}"));
-	// } else {
-	// 	return [];
-	// }
-	console.log("getLocalStorage");
-	return JSON.parse(window.localStorage.getItem("task") as string);
+	let task = localStorage.getItem("task");
+	if (task) {
+		return (task = JSON.parse(localStorage.getItem("task") || "{}"));
+	} else {
+		return [];
+	}
 };
 
 const setLocalStorage = (items: any[]) => {
