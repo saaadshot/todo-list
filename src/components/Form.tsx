@@ -1,34 +1,32 @@
-import React, { useEffect, useState } from "react";
-// import Alert from "./Alert";
+import React, { useState } from "react";
 import List from "./List";
-
-const getLocalStorage = () => {
-	let task = localStorage.getItem("task");
-	if (task) {
-		return (task = JSON.parse(localStorage.getItem("task") || "{}"));
-	} else {
-		return [];
-	}
-};
+import useTask from "../hooks/useTask";
+import { useQueryClient } from "react-query";
+import useDeleteTask from "../hooks/useDeleteTask";
+import useNewTask from "../hooks/useNewTask";
+import useUpdateTaskTitle from "../hooks/useUpdateTaskTitle";
+import useUpdateIsDone from "../hooks/useUpdateIsDone";
 
 const Form = () => {
 	const [title, setTitle] = useState("");
-	const [task, setTask] = useState<Task[]>(getLocalStorage);
 	const [isEditing, setIsEditing] = useState(false);
 	const [editID, setEditID] = useState<string | null>(null);
-	// const [isDone, setIsDone] = useState(false);
+
+	const updateIsDone = useUpdateIsDone();
+	const updateTask = useUpdateTaskTitle();
+	const deleteTask = useDeleteTask();
+	const taskResults = useTask();
+	const addTask = useNewTask();
+	const { data, isError, isLoading } = taskResults;
+
+	console.log(data);
+
+	const queryClient = useQueryClient();
 
 	const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
-		if (title && isEditing) {
-			setTask(
-				task.map((item: Task) => {
-					if (item.id === editID) {
-						return { ...item, title: title };
-					}
-					return item;
-				})
-			);
+		if (title && isEditing && typeof editID === "string") {
+			updateTask.mutate({ id: editID, title });
 			setTitle("");
 			setEditID(null);
 			setIsEditing(false);
@@ -38,37 +36,43 @@ const Form = () => {
 				title: title,
 				isDone: false,
 			};
-			setTask([...task, newTask]);
+			addTask.mutate(newTask);
 			setTitle("");
 		}
 	};
 
 	const removeTask = (id: string) => {
-		setTask(task.filter((item) => item.id !== id));
+		deleteTask.mutate(
+			{ id },
+			{
+				onSuccess: () => {
+					queryClient.invalidateQueries("tasks");
+				},
+			}
+		);
 	};
 
 	const editTask = (id: string) => {
-		const editItem = task.find((item) => item.id === id);
+		const editItem = data.find((item: Task) => item.id === id);
 		setIsEditing(true);
 		setEditID(id);
 		if (editItem) setTitle(editItem?.title);
 	};
 
 	const changeIsDone = (id: string) => {
-		setTask(
-			task.map((item: Task) => {
-				if (item.id === id) {
-					if (item.isDone) return { ...item, isDone: false };
-					else return { ...item, isDone: true };
-				}
-				return item;
-			})
+		updateIsDone.mutate(
+			{ id },
+			{
+				onSuccess: () => {
+					queryClient.invalidateQueries("tasks");
+				},
+			}
 		);
 	};
 
-	useEffect(() => {
-		localStorage.setItem("task", JSON.stringify(task));
-	}, [task]);
+	if (isError) {
+		return <div>Something Went Wrong</div>;
+	}
 
 	return (
 		<section className="section-center">
@@ -87,9 +91,9 @@ const Form = () => {
 					</button>
 				</div>
 			</form>
-			{task.length > 0 && (
+			{data.length > 0 && (
 				<List
-					tasks={task}
+					tasks={data}
 					removeTask={removeTask}
 					editTask={editTask}
 					changeIsDone={changeIsDone}
